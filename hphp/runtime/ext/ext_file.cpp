@@ -107,6 +107,14 @@
 #define PHP_FILE_APPEND             8
 #define PHP_FILE_NO_DEFAULT_CONTEXT 16
 
+/* Stream metadata definitions */
+#define PHP_STREAM_META_TOUCH       1
+#define PHP_STREAM_META_OWNER_NAME  2
+#define PHP_STREAM_META_OWNER       3
+#define PHP_STREAM_META_GROUP_NAME  4
+#define PHP_STREAM_META_GROUP       5
+#define PHP_STREAM_META_ACCESS      6
+
 #ifndef GLOB_ONLYDIR
 # define GLOB_ONLYDIR (1<<30)
 # define GLOB_EMULATE_ONLYDIR
@@ -1124,9 +1132,21 @@ static int get_uid(const Variant& user) {
 
 bool f_chown(const String& filename, const Variant& user) {
   CHECK_PATH_FALSE(filename, 1);
-  int uid = get_uid(user);
-  if (uid == 0) return false;
-  CHECK_SYSTEM(chown(File::TranslatePath(filename).data(), uid, (gid_t)-1));
+  Stream::Wrapper* w = Stream::getWrapperFromURI(filename);
+  if (!w) {
+    int uid = get_uid(user);
+    if (uid == 0) return false;
+    CHECK_SYSTEM(chown(File::TranslatePath(filename).data(), uid, (gid_t)-1));
+  } else {
+    int option;
+    if (user.isString()) {
+      option = PHP_STREAM_META_OWNER_NAME;
+    } else {
+      option = PHP_STREAM_META_OWNER;
+    }
+    CHECK_SYSTEM(w->metadata(filename, option, user));
+  }
+
   return true;
 }
 

@@ -60,6 +60,9 @@ class Wrapper : boost::noncopyable {
   virtual int rmdir(const String& path, int options) {
     return -1;
   }
+  virtual int metadata(const String& path, int options, const Variant& user) {
+    return -1;
+  }
   virtual Directory* opendir(const String& path) {
     return nullptr;
   }
